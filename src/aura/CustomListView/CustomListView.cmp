@@ -1,0 +1,181 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes" 
+                controller="CustomListViewController"
+                access="global" >
+    <aura:attribute name="HeaderLabel" type="string" default="取引先"/>
+    <aura:attribute name="sObjectType" type="string" default="Account"/>
+    <aura:attribute name="ObjectColumnStr" type="string" default="Id,Name"/>
+    <aura:attribute name="ObjectColumn" type="string[]" default="Id,Name"/>
+    <aura:attribute name="pageSize" type="Integer" default="10" />
+    <!--public-->
+    <aura:attribute name="err" type="boolean" default="false" access="private"/>
+    <aura:attribute name="errMsg" type="String" default="システムエラーが発生しました。" access="private"/>
+    <aura:attribute name="warning" type="boolean" default="false" access="private"/>
+    <aura:attribute name="warnMsg" type="String" default="" access="private"/>
+    <aura:attribute name="ListHeader" type="string[]" access="private"/>
+    <aura:attribute name="ListHeaderApi" type="string[]" access="private"/>
+    <aura:attribute name="ListViews" type="ListView[]" access="private"/>
+    <aura:attribute name="mapShow" type="list" access="private"/>
+    <aura:attribute name="ListData" type="sObject[]" access="private"/>
+    <aura:attribute name="cnt" type="Integer" access="private" default="0"/>
+    <aura:attribute name="start" type="Integer" access="private" default="0"/>
+    <aura:attribute name="end" type="Integer" access="private" default="0"/>
+    <aura:attribute name="nowPage" type="Integer" access="private" default="0"/>
+    <aura:attribute name="allPage" type="Integer" access="private" default="0"/>
+    <aura:attribute name="sorticon" type="string" access="private" default="utility:arrowup"/>
+    <!-- attribute -->
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <!-- event -->
+    <div class="slds-page-header">
+        <div class="slds-grid">
+            <div class="slds-col slds-has-flexi-truncate">
+                <div class="slds-media slds-no-space slds-grow">
+                    <div class="slds-media__figure">
+                        <span class="slds-avatar slds-avatar_middle">
+                            <lightning:icon iconName="custom:custom83" size="middle" alternativeText="custom83"/>
+                        </span>
+                    </div>
+                    <div class="slds-media__body">
+                        <nav>
+                        <ol class="slds-breadcrumb slds-line-height_reset">
+                            <li class="slds-breadcrumb__item">
+                                 <li class="slds-breadcrumb__item"><span>{!v.HeaderLabel}</span></li>
+                            </li>
+                        </ol>
+                        </nav>
+                        <h1 class="slds-page-header__title slds-p-right_x-small">
+                            <button class="slds-button slds-button_reset slds-type-focus slds-truncate" aria-haspopup="true" title="">
+                                <ui:inputSelect aura:id="listViewsSelect" class="slds-select header-select" change="{!c.changeView}"/>	
+                            </button>
+                        </h1>
+                    </div>
+                </div>
+            </div>
+            <div class="slds-col slds-no-flex slds-grid slds-align-top slds-p-bottom_xx-small">
+                <div class="slds-button-group" role="group">
+                	<button class="slds-button slds-button_neutral" onclick="{!c.createData}">New</button>
+                </div>
+            </div>
+        </div>
+        <div class="slds-grid">
+            <aura:if isTrue="{!v.cnt>0}">
+            <div class="slds-col slds-align-middle">
+            	<p class="slds-text-body_small">{!v.allPage} ページ中 {!v.nowPage}ページを表示 </p>
+            </div>
+            <div class="slds-col slds-no-flex slds-grid slds-align-bottom">
+				<div class="slds-dropdown-trigger slds-dropdown-trigger_click slds-m-left_xx-small">
+                        <button class="slds-button slds-button_icon slds-m-left_xx-small slds-button_icon-border-filled" title="前ページ" onclick="{!c.Previous}" disabled="{!v.start == 0}">
+                            <lightning:icon iconName="utility:left" size="small" alternativeText="left"/>
+                            <span class="slds-assistive-text">prev</span>
+                        </button>
+                        <button class="slds-button slds-button_icon slds-button_icon-border-filled" title="次ページ" onclick="{!c.Next}" disabled="{!v.end + 1 >= v.cnt}">
+                            <lightning:icon iconName="utility:right" size="small" alternativeText="right"/>
+                            <span class="slds-assistive-text">next</span>
+                        </button>
+                </div>
+            </div>
+            </aura:if>
+        </div>
+    </div>
+    <aura:if isTrue="{!v.err}">
+        <div class="slds-m-vertical_small">
+        	<div class="slds-notify slds-notify--alert slds-theme--error slds-theme--alert-texture slds-banner slds-m-bottom_x-small" role="alert">
+                <span class="slds-assistive-text">Error</span>
+                <h2>{!v.errMsg}</h2>
+            </div>        
+        </div>
+    </aura:if>
+    <aura:if isTrue="{!v.warning}">
+        <div class="slds-m-vertical_small">
+        	<div class="slds-notify slds-notify--alert slds-theme--warning slds-theme--alert-texture slds-banner slds-m-bottom_x-small" role="alert">
+                <span class="slds-assistive-text">Warning</span>
+                <h2>{!v.warnMsg}</h2>
+            </div>
+        </div>
+    </aura:if>
+    <!-- Message -->
+    <!--head-->
+    <div class="slds-card">
+        <div aura:id="spinner" class="demo-only demo--inverse slds-hide" style="height: 6rem;">
+          <div class="slds-spinner_container">
+            <div role="status" class="slds-spinner slds-spinner_medium">
+              <span class="slds-assistive-text">Loading</span>
+              <div class="slds-spinner__dot-a"></div>
+              <div class="slds-spinner__dot-b"></div>
+            </div>
+          </div>
+        </div>
+        <aura:if isTrue="{!v.cnt>0}">
+        <table class="slds-table slds-table_bordered slds-table_resizable-cols slds-table_fixed-layout" role="grid">
+            <thead>
+                <tr class="slds-line-height_reset">
+                    <aura:iteration items="{!v.ListHeader}" var="f" indexVar="index">
+                        <th aria-sort="descending" class="slds-is-sortable slds-is-resizable slds-text-title_caps slds-is-sorted slds-is-sorted_desc" scope="col">
+                             <a class="slds-th__action slds-text-link_reset" href="javascript:void(0);" role="button" tabindex="0" rel="{!index}" onclick="{!c.clickHeader}">
+                                 <span class="slds-truncate" title="{!f}">{!f}</span>
+                                 <div class="slds-icon_container slds-hide" name="sort-icon" id="{!'sort'+ index}" >
+  									<lightning:icon iconName="{!v.sorticon}" size="xx-small"/>
+                                 </div>
+                            </a>
+                            <span class="slds-assistive-text" aria-live="assertive" aria-atomic="true">Sorted descending</span>
+                            <div class="slds-resizable">
+                              <input type="range" min="20" max="1000" aria-label="Name column width" class="slds-resizable__input slds-assistive-text" id="cell-resize-handle-138" tabindex="0" />
+                              <span class="slds-resizable__handle">
+                                <span class="slds-resizable__divider"></span>
+                              </span>
+                            </div>                           
+                        </th>
+                    </aura:iteration>
+                    <!-- 表示項目ヘッダ -->
+                    <th class="slds-is-sortable slds-is-resizable slds-text-title_caps" scope="col">
+                        <div class="slds-truncate slds-p-vertical_xx-small slds-p-horizontal_xx-small" />                        
+                    </th>
+                    <!-- ボタン列の空ヘッダ -->
+                </tr>
+            </thead>
+            <tbody>
+                <aura:iteration items="{!v.mapShow}" indexVar="key" var="r" >
+                    <tr class="slds-hint-parent">
+                        <aura:if isTrue="{!r.Name!=null}">
+                            <td role="gridcell">
+                                <a href="{!'../one/one.app?#/sObject/'+r.key+'/view'}" target="_blank" >
+                                    {!r.Name}
+                                </a>
+                            </td>
+                        </aura:if>
+                        <!-- NameとIdはリンク化 -->
+                        <aura:iteration items="{!r.value}" var="v" >
+                            <td role="gridcell">
+                                {!v}
+                            </td>
+                        </aura:iteration>
+                        <!-- レコード作成ボタン -->
+                        <td role="gridcell" class="slds-text-align_right">
+                            <div class="slds-button-group" role="group">
+                                <button class="slds-button slds-button_neutral">
+                                   <a href="javascript:void(0);" rel="{!r.key}" onclick="{!c.clickTodoBtn}">
+                                    新規ToDo
+                                   </a> 
+                                </button>
+                                <button class="slds-button slds-button_neutral">
+                                   <a href="javascript:void(0);" rel="{!r.key}" onclick="{!c.clickOppBtn}">
+                                    新規商談
+                                   </a> 
+                                </button>
+                            </div>
+                        </td>
+                        <!-- レコードアクション -->
+                    </tr>
+                </aura:iteration>
+            </tbody>
+        </table>
+            <aura:set attribute="else">
+                <div class="slds-grid slds-grid_vertical slds-align_absolute-center" style="min-height:200px;">
+                    <div class="slds-container_medium slds-m-top_small">
+                        <p>データがありません。</p>
+                    </div>
+                </div>
+            </aura:set>
+        </aura:if>
+    </div>
+    <!-- table -->
+</aura:component>
