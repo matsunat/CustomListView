@@ -137,15 +137,17 @@
                     <tr class="slds-hint-parent">
                         <aura:if isTrue="{!r.Name!=null}">
                             <td role="gridcell">
+                                <div class="slds-truncate" title="{!v}">
                                 <a href="{!'../one/one.app?#/sObject/'+r.key+'/view'}" target="_blank" >
                                     {!r.Name}
                                 </a>
+                                </div>
                             </td>
                         </aura:if>
                         <!-- NameとIdはリンク化 -->
                         <aura:iteration items="{!r.value}" var="v" >
                             <td role="gridcell">
-                                {!v}
+                                <div class="slds-truncate" title="{!v}">{!v}</div>
                             </td>
                         </aura:iteration>
                         <!-- レコード作成ボタン -->
