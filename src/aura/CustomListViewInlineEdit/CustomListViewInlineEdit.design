@@ -1,6 +1,6 @@
 <design:component >
 	<design:attribute name="HeaderLabel" label="タイトル" description="ListViewのタイトル" default="取引先"/>
     <design:attribute name="sObjectType" label="オブジェクト" description="オブジェクトのAPI名" default="Account"/>
-    <design:attribute name="ObjectColumnStr" label="表示カラム" description="一覧に表示するカラム。IdとNameはリンクになります。IdとNameを除いて最大5項目まで指定できます。カンマ区切りで設定してください。__rなどのリレーション項目は指定できません。数式を使用して表示してください。" default="Id,Name,Phone"/>
+    <design:attribute name="ObjectColumnStr" label="表示カラム" description="一覧に表示するカラム。IdとNameはリンクになります。カンマ区切りで設定してください。__rなどのリレーション項目は指定できません。数式を使用して表示してください。" default="Id,Name,Phone"/>
     <design:attribute name="pageSize" label="ページサイズ" description="1ページ辺りの表示件数" default="10"/>
 </design:component>
