@@ -38,6 +38,12 @@
                     <aura:if isTrue="{!v.fieldType=='TEXTAREA'}">
                         <ui:inputTextArea value="{!v.value}" aura:id="inputs" maxlength="{!v.length}" blur="{!c.onblurInput}"/>
                     </aura:if>
+                    <aura:if isTrue="{!v.fieldType=='EMAIL'}">
+                        <lightning:input type="email" value="{!v.value}" aura:id="inputs" maxlength="{!v.length}" onblur="{!c.onblurInput}"/>
+                    </aura:if>
+                    <aura:if isTrue="{!v.fieldType=='URL'}">
+                        <lightning:input type="url" value="{!v.value}" aura:id="inputs" maxlength="{!v.length}" onblur="{!c.onblurInput}"/>
+                    </aura:if>                    
                     <aura:if isTrue="{!v.fieldType=='PICKLIST'}">
                     	<lightning:select aura:id="inpSelect" onblur="{!c.onblurInput}" >
 							<aura:iteration items="{!v.options}" var="item">

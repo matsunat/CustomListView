@@ -156,6 +156,8 @@ public with sharing class CustomListViewController {
      * 日時：DATETIME
      * チェックボックス：BOOLEAN
      * テキストエリア：TEXTAREA
+     * メール：EMAIL
+     * URL：URL
      * その他：STRING
      */
     private static string getFieldTypeStr(Schema.DisplayType ft){
@@ -194,7 +196,7 @@ public with sharing class CustomListViewController {
             fts = 'NUMBER';
         }
         else if(ft == Schema.DisplayType.EMAIL){
-            fts = 'STRING';
+            fts = 'EMAIL';
         }
         else if(ft == Schema.DisplayType.ENCRYPTEDSTRING){
             fts = 'STRING';
@@ -236,7 +238,7 @@ public with sharing class CustomListViewController {
             fts = 'TEXTAREA';
         }
         else if(ft == Schema.DisplayType.URL){
-            fts = 'STRING';
+            fts = 'URL';
         }
         return fts;
     }

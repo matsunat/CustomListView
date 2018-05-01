@@ -191,7 +191,7 @@
                                         <aura:if isTrue="{!rec.fieldType=='NUMBER'}">
                                         	<ui:outputNumber value="{!rec.value}" class="slds-text-align_right"/>
                                         </aura:if>
-                                        <aura:if isTrue="{!rec.fieldType=='STRING'||rec.fieldType=='TEXTAREA' ||rec.fieldType=='PICKLIST'}">
+                                        <aura:if isTrue="{!rec.fieldType=='STRING'||rec.fieldType=='TEXTAREA' ||rec.fieldType=='PICKLIST' ||rec.fieldType=='EMAIL'||rec.fieldType=='URL'}">
                                         	{!rec.value}
                                         </aura:if>
                                     </span>
