@@ -1,0 +1,6 @@
+<aura:event type="APPLICATION" description="カラム変更" >
+    <aura:attribute name="sObjectId" type="string" default=""/>
+    <aura:attribute name="apiName" type="string" default=""/>
+    <aura:attribute name="value" type="string" default=""/>
+    <aura:attribute name="fixOther" type="boolean" default="false"/>
+</aura:event>

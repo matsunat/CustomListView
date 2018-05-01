@@ -22,9 +22,21 @@ public class CustomListViewControllerTest {
         system.assertNotEquals(lstView.size(), 0);
         //2.カラム取得
         List<string> lstClm = new List<string>();
-        lstClm.Add('Id');lstClm.Add('Name');lstClm.Add('Phone');lstClm.Add('Owner.Name');
-        Map<String,String> mapLbl = new Map<String,String>();
-        mapLbl = CustomListViewController.getClmLabel('Account', lstClm);
+        lstClm.Add('Id');
+        lstClm.Add('Name');
+        lstClm.Add('Phone');
+        lstClm.Add('Type');
+        lstClm.Add('ParentId');
+        lstClm.Add('Description');
+        lstClm.Add('LastActivityDate');
+        lstClm.Add('AnnualRevenue');
+        lstClm.Add('Owner.Name');
+        list<CustomListViewController.FieldInfo> listFI = new list<CustomListViewController.FieldInfo>();
+        listFI = CustomListViewController.getClmLabel('Account', lstClm);
+        Map<string,string> mapLbl = new Map<string,string>();
+        for(CustomListViewController.FieldInfo f : listFI){
+            mapLbl.put(f.apiName,f.labelName);
+        }
         for(string key : lstClm){
             if(key.equals('Id')){
                 //Idは対象外
@@ -48,6 +60,10 @@ public class CustomListViewControllerTest {
         list<sObject> lstObj = CustomListViewController.getListViewData('Account',lstClm,viewId);
         //2000件までのデータが取得されている。
         system.assertEquals(lstObj.size(),2000);
+        //4.データ更新
+        list<sObject> lstUpd = new list<sObject>();
+        lstUpd.Add(lstObj[0]);
+		CustomListViewController.updListViews(lstUpd);
         test.stopTest();
     }
 }

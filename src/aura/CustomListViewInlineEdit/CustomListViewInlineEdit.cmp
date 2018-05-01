@@ -23,8 +23,12 @@
     <aura:attribute name="nowPage" type="Integer" access="private" default="0"/>
     <aura:attribute name="allPage" type="Integer" access="private" default="0"/>
     <aura:attribute name="sorticon" type="string" access="private" default="utility:arrowup"/>
+    <aura:attribute name="edited" type="boolean" access="private" default="false"/>
+    <aura:attribute name="allChk" type="boolean" access="private" default="false"/>
+    <aura:attribute name="selectRec" type="Integer" access="private" default="0"/>
     <!-- attribute -->
 	<aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="c:fieldEdit" action="{!c.fieldEdit}"/>
     <!-- event -->
     <div class="slds-page-header">
         <div class="slds-grid">
@@ -109,6 +113,12 @@
         <table class="slds-table slds-table_bordered slds-table_resizable-cols slds-table_fixed-layout" role="grid">
             <thead>
                 <tr class="slds-line-height_reset">
+                        <th scope="col" style="width: 2rem;">
+                            <div class="slds-th__action slds-th__action_form">
+								<ui:inputCheckbox value="{!v.allChk}" change="{!c.clickHeaderChk}"/>
+                            </div>
+                        </th>
+                    <!-- 複数選択 -->
                     <aura:iteration items="{!v.ListHeader}" var="f" indexVar="index">
                         <th aria-sort="descending" class="slds-is-sortable slds-is-resizable slds-text-title_caps slds-is-sorted slds-is-sorted_desc" scope="col">
                              <a class="slds-th__action slds-text-link_reset" href="javascript:void(0);" role="button" tabindex="0" rel="{!index}" onclick="{!c.clickHeader}">
@@ -127,7 +137,7 @@
                         </th>
                     </aura:iteration>
                     <!-- 表示項目ヘッダ -->
-                    <th class="slds-is-sortable slds-is-resizable slds-text-title_caps" scope="col">
+                    <th class="slds-is-sortable slds-is-resizable slds-text-title_caps" style="width: 3rem;" scope="col">
                         <div class="slds-truncate slds-p-vertical_xx-small slds-p-horizontal_xx-small" />                        
                     </th>
                     <!-- ボタン列の空ヘッダ -->
@@ -136,37 +146,80 @@
             <tbody>
                 <aura:iteration items="{!v.mapShow}" indexVar="key" var="r" >
                     <tr class="slds-hint-parent">
+                     	<td class="slds-cell-edit" role="gridcell">
+							<ui:inputCheckbox value="{!r.Selected}" change="{!c.clickRecordChk}"/>
+                        </td>
+                        <!-- 行選択 -->
                         <aura:if isTrue="{!r.Name!=null}">
-                            <td role="gridcell">
-                                <div class="slds-truncate" title="{!r.Name}">
-                                <a href="{!'../one/one.app?#/sObject/'+r.key+'/view'}" target="_blank" >
-                                    {!r.Name}
-                                </a>
-                                </div>
+                            <td class="slds-cell-edit" role="gridcell">
+                                <span class="slds-grid slds-grid_align-spread">
+                                    <span class="slds-truncate" title="{!r.Name}">
+                                    	<a href="{!'../one/one.app?#/sObject/'+r.key+'/view'}" target="_blank" >
+                                            {!r.Name}
+                                        </a>
+                                    </span>
+                                    <button class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small slds-edit-button" tabindex="0" >
+                                         <lightning:icon iconName="utility:lock" size="xx-small" alternativeText="lock"/>
+                                    </button>
+                                    <!-- Nameの編集はリストビューからは不可(標準同様) -->
+                                </span>
                             </td>
                         </aura:if>
                         <!-- NameとIdはリンク化 -->
-                        <aura:iteration items="{!r.value}" var="v" indexVar="index" >
-                            <td class="slds-cell-edit" role="gridcell">
+                        <aura:iteration items="{!r.record}" var="rec" >
+                            <td class="{!'slds-cell-edit slds-edit-btn-cell '+rec.edited}" role="gridcell" ondblclick="{!c.clickClm}">
+                                <ul id="rec-Pram" class="slds-hide">
+                                    <li id="recKey">{!r.key}</li>
+                                    <li id="apiName">{!rec.apiName}</li>
+                                </ul>
                                 <span class="slds-grid slds-grid_align-spread">
-                                    <span class="slds-truncate" title="{!v}">{!index}</span>
+                                    <span class="slds-truncate" title="{!rec.value}">
+                                        <aura:if isTrue="{!rec.fieldType=='DATETIME'}">
+                                            <ui:outputDateTime value="{!rec.value}"/>
+                                        </aura:if>
+                                        <aura:if isTrue="{!rec.fieldType=='DATE'}">
+                                        	<ui:outputDate value="{!rec.value}"/>
+                                        </aura:if>
+                                        <aura:if isTrue="{!rec.fieldType=='BOOLEAN'}">
+                                            <span class="slds-checkbox slds-m-left_small">
+                                        	<ui:outputCheckbox value="{!rec.value}"/>
+                                            </span>
+                                        </aura:if>                                            
+                                        <aura:if isTrue="{!rec.fieldType=='CURRENCY'}">
+                                        	<ui:outputCurrency value="{!rec.value}" class="slds-text-align_right"/>
+                                        </aura:if>
+                                        <aura:if isTrue="{!rec.fieldType=='NUMBER'}">
+                                        	<ui:outputNumber value="{!rec.value}" class="slds-text-align_right"/>
+                                        </aura:if>
+                                        <aura:if isTrue="{!rec.fieldType=='STRING'||rec.fieldType=='TEXTAREA' ||rec.fieldType=='PICKLIST'}">
+                                        	{!rec.value}
+                                        </aura:if>
+                                    </span>
+                                    <aura:if isTrue="{!rec.isUpdate}">
+                                        <button class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small slds-edit-button" onClick="{!c.clickClm}">
+                                             <lightning:icon iconName="utility:edit" size="xx-small" alternativeText="edit"/>
+                                        </button>
+                                        <aura:set attribute="else">
+                                            <button class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small slds-edit-button">
+                                                 <lightning:icon iconName="utility:lock" size="xx-small" alternativeText="lock"/>
+                                            </button>                                            
+                                        </aura:set>
+                                    </aura:if>
                                 </span>
+                                <aura:if isTrue="{!rec.editmode}">
+                                	<c:EditTableCloum sObjectId="{!r.key}" apiName="{!rec.apiName}" value="{!rec.value}"
+                                                      fieldType="{!rec.fieldType}" length="{!rec.length}" selectRec="{!v.selectRec}"
+                                                      piclistLabel="{!rec.piclistLabel}" piclistValue="{!rec.piclistValue}"/>
+                                </aura:if>
+                                <!-- slds-hideにする-->
                             </td>
-                        </aura:iteration>
+                        </aura:iteration>      
                         <!-- レコード作成ボタン -->
                         <td role="gridcell" class="slds-text-align_right">
-                            <div class="slds-button-group" role="group">
-                                <button class="slds-button slds-button_neutral">
-                                   <a href="javascript:void(0);" rel="{!r.key}" onclick="{!c.clickTodoBtn}">
-                                    新規ToDo
-                                   </a> 
-                                </button>
-                                <button class="slds-button slds-button_neutral">
-                                   <a href="javascript:void(0);" rel="{!r.key}" onclick="{!c.clickOppBtn}">
-                                    新規商談
-                                   </a> 
-                                </button>
-                            </div>
+							<lightning:buttonMenu alternativeText="レコードアクション" menuAlignment="right" onselect="{!c.recordAction}">
+                                <lightning:menuItem label="新規ToDo" value="{!'todo,'+r.key}" />
+                                <lightning:menuItem label="新規商談" value="{!'opp,'+r.key}" />
+                            </lightning:buttonMenu>
                         </td>
                         <!-- レコードアクション -->
                     </tr>
@@ -183,4 +236,12 @@
         </aura:if>
     </div>
     <!-- table -->
+    <aura:if isTrue="{!v.edited}">
+    <div style="height: 180px;">
+      <div class="slds-docked-form-footer">
+        <button type="button" class="slds-button slds-button_neutral" onclick="{!c.CancelEdit}">Cancel</button>
+        <button type="button" class="slds-button slds-button_brand" onclick="{!c.SaveEdit}">Save</button>
+      </div>
+    </div>
+    </aura:if>
 </aura:component>

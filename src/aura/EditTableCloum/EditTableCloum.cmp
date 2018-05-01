@@ -1,0 +1,71 @@
+<aura:component implements="flexipage:availableForAllPageTypes" access="global" >
+    <aura:attribute name="sObjectId" type="string" default=""/>
+    <aura:attribute name="apiName" type="string" default=""/>
+    <aura:attribute name="value" type="string" default=""/>
+    <aura:attribute name="fieldType" type="string" default=""/>
+    <aura:attribute name="length" type="integer" default="100"/>
+    <aura:attribute name="piclistLabel" type="string" default=""/>
+    <aura:attribute name="piclistValue" type="string" default=""/>
+    <aura:attribute name="selectRec" type="Integer" default="0"/>
+    <aura:attribute name="fixOther" type="boolean" access="private" default="false"/>
+	<aura:attribute name="options" type="list" default="" access="private"/> 
+    <aura:attribute name="oldvalue" type="string" default="" access="private"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <section class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px; left: 0.0625rem;">
+		<article class="slds-card">
+			<div class="slds-card__body slds-card__body_inner">
+                <div class="slds-popover__body">
+                    <div class="slds-form-element slds-grid slds-wrap">
+                        <div class="slds-form-element__control slds-grow slds-m-horizontal_x-small">
+			        <aura:if isTrue="{!v.fieldType=='DATETIME'}">
+			           	<lightning:input type="datetime-local" aura:id="inputs" value="{!v.value}" onblur="{!c.onblurInput}"/>
+			        </aura:if>
+			        <aura:if isTrue="{!v.fieldType=='DATE'}">
+			          <lightning:input type="date" value="{!v.value}" aura:id="inputs" onblur="{!c.onblurInput}"/>
+			        </aura:if>
+			        <aura:if isTrue="{!v.fieldType=='BOOLEAN'}">
+			          <ui:inputCheckbox value="{!v.value}" aura:id="inputs" class="slds-m-left_small" blur="{!c.onblurInput}"/>
+			        </aura:if>                                            
+			        <aura:if isTrue="{!v.fieldType=='CURRENCY'}">
+			          <ui:inputCurrency value="{!v.value}" aura:id="inputs" maxlength="{!v.length}" blur="{!c.onblurInput}"/>
+			        </aura:if>
+			        <aura:if isTrue="{!v.fieldType=='NUMBER'}">
+			          <ui:inputNumber value="{!v.value}" aura:id="inputs" maxlength="{!v.length}" blur="{!c.onblurInput}"/>
+			        </aura:if>
+			        <aura:if isTrue="{!v.fieldType=='STRING'}">
+			          <ui:inputText value="{!v.value}" aura:id="inputs" maxlength="{!v.length}" blur="{!c.onblurInput}"/>
+			        </aura:if>
+                    <aura:if isTrue="{!v.fieldType=='TEXTAREA'}">
+                        <ui:inputTextArea value="{!v.value}" aura:id="inputs" maxlength="{!v.length}" blur="{!c.onblurInput}"/>
+                    </aura:if>
+                    <aura:if isTrue="{!v.fieldType=='PICKLIST'}">
+                    	<lightning:select aura:id="inpSelect" onblur="{!c.onblurInput}" >
+							<aura:iteration items="{!v.options}" var="item">
+								<option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                            </aura:iteration>
+                        </lightning:select>
+                    </aura:if>
+                            
+                            
+                        </div>
+                    </div>
+                </div>
+				<aura:if isTrue="{!v.selectRec>0}">
+                    <div class="slds-m-horizontal_x-small" >
+                        <div class="slds-form-element__control">
+                        	<lightning:input type="checkbox" label="{!v.selectRec + '個の選択済み項目を更新'}" value="true" aura:id="chkFix"/>
+                        </div>
+                    </div>
+                </aura:if>
+            </div>
+            <footer class="slds-card__footer">
+				<aura:if isTrue="{!v.selectRec>0}">
+                    	<div class="slds-text-align_right">
+                        	<button type="button" class="slds-button slds-button_neutral" style="display: inline;" onclick="{!c.CancelEdit}">キャンセル</button>
+                            <button type="button" class="slds-button slds-button_brand" style="display: inline;" onclick="{!c.FixEdit}">適用</button>
+                        </div>
+                </aura:if>
+            </footer>
+        </article>
+	</section>
+</aura:component>

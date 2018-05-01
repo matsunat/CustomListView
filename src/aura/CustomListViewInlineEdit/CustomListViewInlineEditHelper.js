@@ -49,24 +49,21 @@
         });
         $A.enqueueAction(action); 
 	},
-    /*
-     * 形式変換
-     * Salesforce提供API　$A.localizationServiceを利用
-     *  IN  @ str ：文字列
-     */
-    formatDate: function(str){
-        if($A.util.isEmpty(str)) return str;
-        if(isNaN(str)){
-            if(str.match(/^\d{4}\-\d{2}\-\d{2}$/)){
-                //日付形式
-                return $A.localizationService.formatDate(str, "YYYY/MM/DD");
-            }else if(str.match(/^\d{4}\-\d{2}\-\d{2}\T\d{2}\:\d{2}\:\d{2}\.\d{3}\Z$/)){
-                //日時形式
-                return $A.localizationService.formatDateTime(str, "YYYY/MM/DD hh:mm:ss");
+    cancelEditMode : function(component,helper) {
+        var mapShow = component.get("v.mapShow");
+        for ( var key in mapShow ) {
+            var rec = mapShow[key].record;
+            for(var i=0; i< rec.length; i++){
+                rec[i].editmode = false;
+                rec[i].value = rec[i].oldvalue;
+                rec[i].edited = "";
             }
-    	}
-    	return str;
-	},
+        }
+        component.set("v.edited",false);
+        component.set("v.mapShow",mapShow);
+        component.set("v.err",false);
+        $A.util.addClass(component.find('spinner'), 'slds-hide');
+    },
     /*
      * 配列ソート
      *  IN  @ component ：component情報
@@ -105,6 +102,56 @@
         helper.setMapShow(component,datalist,helper);
     },
     /*
+     * レコードセット
+     */
+    setMapShowRecord : function(component,rec,clms,i,clmInfo,paginationList,helper) {
+        if(rec[i]!=null){
+            var rArr = []
+            var clmIndex = 0;
+            for(var key of clms){
+                if(key!="Id" && key!="id" && key!="ID"
+                   && key!="Name" && key!="name" && key!="NAME"){
+                    var isUpdate=false;
+                    var fieldType;
+                    var length;
+                    var picLabel;
+                    var picValue;
+                    for(var j=0; j< clmInfo.length; j++){
+                        if(key===clmInfo[j].key){
+                            isUpdate = clmInfo[j].isUpdate;
+                            fieldType = clmInfo[j].fieldType;
+                            length = clmInfo[j].length;
+                            picLabel = clmInfo[j].piclistLabel;
+                            picValue = clmInfo[j].piclistValue;
+                            break;
+                        }
+                    }
+                    rArr.push({
+                        "apiName":key,
+                        "value":rec[i][key],
+                        "oldvalue":rec[i][key],
+                        "clmIndex" : clmIndex,
+                        "isUpdate" : isUpdate,
+                        "fieldType" : fieldType,
+                        "length" : length,
+                        "piclistLabel" : picLabel,
+                        "piclistValue" : picValue,
+                        "editmode":false,
+                        "edited":""
+                    });
+                    clmIndex++;
+                }
+            }
+            paginationList.push({
+                key:rec[i].Id,
+                Name:rec[i].Name,
+                Selected:false,
+                record:rArr
+            });
+        }        
+        
+    },
+    /*
      * 取得データの表示配列セット
      * 可変に表示するため連想配列化する。
      *  IN  @ component ：component情報
@@ -121,20 +168,9 @@
 		component.set("v.allPage",Math.ceil(rec.length/pageSize));
 		var paginationList = [];
 		var clms = component.get("v.ObjectColumn");
+        var clmInfo = component.get("v.mapClmInfo");
 		for(var i=0; i< pageSize; i++){
-		    if(rec[i]!=null){
-		        var rArr = []
-                for(var key of clms){
-                    if(key!="Id" && key!="id" && key!="ID"
-                       && key!="Name" && key!="name" && key!="NAME")
-                        rArr.push(helper.formatDate(rec[i][key]));
-                }
-		        paginationList.push({
-		        	key:rec[i].Id,
-                    Name:rec[i].Name,
-		            value:rArr
-		        });
-		    }
+			helper.setMapShowRecord(component,rec,clms,i,clmInfo,paginationList,helper);
 		}
 		component.set('v.mapShow', paginationList);        
     },
@@ -167,9 +203,14 @@
                 for ( var key in rec ) {
                     label.push(rec[key]['LabelName']);
                     api.push(rec[key]['apiName']);
+                    //項目情報
                     clmInfo.push({
                         key:rec[key]['apiName'],
-                        isUpdate : rec[key]['isUpdate']
+                        isUpdate : rec[key]['isUpdate'],
+                        fieldType : rec[key]['fieldType'],
+                        length : rec[key]['length'],
+                        piclistLabel : rec[key]['piclistLabel'],
+                        piclistValue : rec[key]['piclistValue']
                     });
                 }
                 component.set("v.ListHeader",label);
