@@ -12,7 +12,15 @@ public with sharing class CustomListViewController {
     @AuraEnabled
 	public static List<ListView> getListViews(string sObjectType){
         List<ListView> listviews = new List<ListView>();
-        listviews = [SELECT Id, Name,developerName FROM ListView WHERE SobjectType = :sObjectType order by name ASC];
+        ApexPages.StandardSetController stdSetController = new ApexPages.StandardSetController( 
+        	database.getQueryLocator( 'SELECT id FROM ' + sObjectType +' LIMIT 1' )
+		);
+        List< SelectOption > listViewOptions = stdSetController.getListViewOptions();
+        Set<id> viewId = new Set<id>();
+        for ( SelectOption option : listViewOptions ){
+            viewId.add(option.getValue());
+        }       
+        listviews = [SELECT Id, Name,developerName FROM ListView WHERE id=:viewId and SobjectType = :sObjectType order by name ASC];
         return listviews;
     }
     /*
