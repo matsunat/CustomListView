@@ -26,6 +26,8 @@
     <aura:attribute name="edited" type="boolean" access="private" default="false"/>
     <aura:attribute name="allChk" type="boolean" access="private" default="false"/>
     <aura:attribute name="selectRec" type="Integer" access="private" default="0"/>
+    <aura:attribute name="mouseStart" type="string" />
+    <aura:attribute name="oldWidth" type="string" />
     <!-- attribute -->
 	<aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
     <aura:handler event="c:fieldEdit" action="{!c.fieldEdit}"/>
@@ -130,7 +132,7 @@
                             <span class="slds-assistive-text" aria-live="assertive" aria-atomic="true">Sorted descending</span>
                             <div class="slds-resizable">
                               <input type="range" min="20" max="1000" aria-label="Name column width" class="slds-resizable__input slds-assistive-text" id="cell-resize-handle-138" tabindex="0" />
-                              <span class="slds-resizable__handle">
+                              <span class="slds-resizable__handle" onmousedown="{!c.calculateWidth}" ondrag="{!c.setNewWidth}">
                                 <span class="slds-resizable__divider"></span>
                               </span>
                             </div>                           

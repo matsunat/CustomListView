@@ -34,11 +34,40 @@
             }
         });
         $A.enqueueAction(action); 
-	}
+	},
+	/*
+	 * カラムリサイズ
+	 */
+    calculateWidth : function(component, event, helper) {
+            var childObj = event.target
+            var parObj = childObj.parentNode;
+            var count = 1;
+            while(parObj.tagName != 'TH') {
+                parObj = parObj.parentNode;
+                count++;
+            }
+            console.log('final tag Name'+parObj.tagName);
+            var mouseStart=event.clientX;
+            component.set("v.mouseStart",mouseStart);
+            component.set("v.oldWidth",parObj.offsetWidth);
+    },
+    setNewWidth : function(component, event, helper) {
+            var childObj = event.target
+            var parObj = childObj.parentNode;
+            var count = 1;
+            while(parObj.tagName != 'TH') {
+                parObj = parObj.parentNode;
+                count++;
+            }
+            var mouseStart = component.get("v.mouseStart");
+            var oldWidth = component.get("v.oldWidth");
+            var newWidth = event.clientX- parseFloat(mouseStart)+parseFloat(oldWidth);
+            parObj.style.width = newWidth+'px';
+    },
     /*
      * ビューの変更時
      */
-    ,changeView : function(component, event, helper) {
+    changeView : function(component, event, helper) {
         var edited = component.get("v.edited");
         if(edited){
             if( window.confirm( "編集内容が保存されていません。リストビューを切り替えてよろしいですか？" )){
