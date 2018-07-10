@@ -39,31 +39,46 @@
 	 * カラムリサイズ
 	 */
     calculateWidth : function(component, event, helper) {
-            var childObj = event.target
-            var parObj = childObj.parentNode;
-            var count = 1;
-            while(parObj.tagName != 'TH') {
-                parObj = parObj.parentNode;
-                count++;
-            }
-            console.log('final tag Name'+parObj.tagName);
-            var mouseStart=event.clientX;
-            component.set("v.mouseStart",mouseStart);
-            component.set("v.oldWidth",parObj.offsetWidth);
+        var childObj = event.target
+        var mouseStart=event.clientX;
+        component.set("v.currentEle", childObj);
+        component.set("v.mouseStart",mouseStart);
+        if(event.stopPropagation) event.stopPropagation();
+        if(event.preventDefault) event.preventDefault();
+        event.cancelBubble=true;
+        event.returnValue=false; 
     },
     setNewWidth : function(component, event, helper) {
-            var childObj = event.target
-            var parObj = childObj.parentNode;
-            var count = 1;
-            while(parObj.tagName != 'TH') {
+        var currentEle = component.get("v.currentEle");
+        if( currentEle != null && currentEle.tagName ) {
+            var parObj = currentEle;
+            while(parObj.parentNode.tagName != 'TH') {
+                if( parObj.className == 'slds-resizable__handle')
+                    currentEle = parObj;    
                 parObj = parObj.parentNode;
                 count++;
             }
+            var count = 1;
             var mouseStart = component.get("v.mouseStart");
-            var oldWidth = component.get("v.oldWidth");
-            var newWidth = event.clientX- parseFloat(mouseStart)+parseFloat(oldWidth);
-            parObj.style.width = newWidth+'px';
+            var oldWidth = parObj.offsetWidth;  
+            var newWidth = oldWidth + (event.clientX - parseFloat(mouseStart));
+            component.set("v.newWidth", newWidth);
+            currentEle.style.right = ( oldWidth - newWidth ) +'px';
+            component.set("v.currentEle", currentEle);
+        }
     },
+    resetColumn: function(component, event, helper) {
+        if( component.get("v.currentEle") !== null ) {
+            var newWidth = component.get("v.newWidth"); 
+            var currentEle = component.get("v.currentEle").parentNode.parentNode; 
+            var parObj = currentEle.parentNode; 
+            parObj.style.width = newWidth+'px';
+            currentEle.style.width = newWidth+'px';
+            console.log(newWidth);
+            component.get("v.currentEle").style.right = 0; 
+            component.set("v.currentEle", null); 
+        }
+	},
     /*
      * ビューの変更時
      */
@@ -78,11 +93,12 @@
         }
         var val = component.find("listViewsSelect").get("v.value");
         helper.getRecords(component,helper,val);
-    }
+       
+    },
     /*
      * クリックヘッダチェックボックス
      */
-    ,clickHeaderChk : function(component, event, helper){
+    clickHeaderChk : function(component, event, helper){
         var chk = component.get("v.allChk");
         var mapShow = component.get("v.mapShow");
         for ( var key in mapShow ) {
@@ -93,8 +109,8 @@
             }
         }
         component.set("v.mapShow",mapShow);
-    }
-    ,clickRecordChk : function(component, event, helper){
+    },
+    clickRecordChk : function(component, event, helper){
         var mapShow = component.get("v.mapShow");
         for ( var key in mapShow ) {
             var rec = mapShow[key].record;
@@ -103,11 +119,11 @@
             }
         }
         component.set("v.mapShow",mapShow);
-    }
+    },
     /*
-     * クリックヘッダ
+     * sort
      */
-    ,clickHeader : function(component, event, helper){
+    clickHeader : function(component, event, helper){
         var edited = component.get("v.edited");
         if(edited){
             if( window.confirm( "編集内容が保存されていません。ページを並び替えてよろしいですか？" )){
@@ -118,35 +134,42 @@
         }
         var target = event.target;
         if(target.tagName==null) return;
-        var clm;
+        if(target.tagName!="A"){
+            while(true){
+                target = target.parentNode;
+                if(target.tagName==="A") break;
+            }
+        }
         if(target.tagName=="A"){
-         	clm = "sort"+ target.rel;   
+            var clms = component.get("v.ListHeaderApi");
+            var sort = component.get("v.Sort");
+            if(sort==="asc"){
+                sort = "desc";
+            }else{
+                sort = "asc";
+            }
+            component.set("v.Sort",sort);
+            component.set("v.SortClm",clms[target.rel]);
+            var val = component.find("listViewsSelect").get("v.value");
+            helper.getRecords(component,helper,val);
         }
-        //iconを一度すべて非表示
-        var clms = component.get("v.ListHeaderApi");
-        for(var idx in clms){
-            var iconhide = document.getElementById("sort"+idx);
-            $A.util.addClass(iconhide, 'slds-hide');
+    },
+    sortEdit : function(component, event, helper) {
+        var edited = component.get("v.edited");
+        if(edited){
+            if( window.confirm( "編集内容が保存されていません。ページを並び替えてよろしいですか？" )){
+                component.set("v.edited",false);
+            }else{
+                return;
+            }
         }
-        //クリックしたヘッダのiconを表示
-        var icon = document.getElementById(clm);
-		$A.util.removeClass(icon, 'slds-hide');
-        var sorted = component.get("v.sorticon");
-        var sort;
-        if(sorted==="utility:arrowdown"){
-            component.set("v.sorticon","utility:arrowup");
-            sort = "desc";
-        }else{
-            component.set("v.sorticon","utility:arrowdown");
-            sort = "asc";
-        }
-        //sort処理
-        helper.sortData(component,helper,clms[target.rel],sort);
-    }
+        var val = component.find("listViewsSelect").get("v.value");
+        helper.getRecords(component,helper,val);
+    },
     /*
      * インライン編集
      */
-    ,clickClm : function(component, event, helper) {
+    clickClm : function(component, event, helper) {
         var target = event.target;
         if(target.tagName===null || target.tagName === undefined) return;
         if(target.tagName!="TD"){
@@ -191,8 +214,8 @@
             component.set("v.selectRec",cnt);
             component.set("v.mapShow",mapShow);
         }
-    }
-    ,fieldEdit : function(component, event, helper) {
+    },
+    fieldEdit : function(component, event, helper) {
         var recKey = event.getParam("sObjectId");
         var apiName = event.getParam("apiName");
         var newValue = event.getParam("value");
@@ -225,11 +248,11 @@
         }
         //現在の値を保持
         component.set("v.mapShow",mapShow);        
-    }
-    ,CancelEdit : function(component, event, helper){
+    },
+    CancelEdit : function(component, event, helper){
         helper.cancelEditMode(component, event);
-    }
-    ,SaveEdit : function(component, event, helper){
+    },
+    SaveEdit : function(component, event, helper){
         var ListData = component.get("v.ListData");
         var mapShow = component.get("v.mapShow");
         var upd =[];
@@ -289,7 +312,7 @@
             }
         });
         $A.enqueueAction(action);
-    }
+    },
     /*
      * レコードアクションイベント
      * 新規Todo、商談
@@ -316,17 +339,24 @@
             }
             createRecordEvent.fire();
         }
-    }
+    },
     /*
      * 新規ボタン押下
      * ※独立したコンポーネントにしてもいいと思います。今回は直接処理記載。
      */
-    ,createData : function(component, event, helper) {
+    createData : function(component, event, helper) {
         var createRecordEvent = $A.get("e.force:createRecord");
         createRecordEvent.setParams({
              "entityApiName": component.get("v.sObjectType")
         });
         createRecordEvent.fire();
+    },
+    standardView : function(component, event, helper) {
+        var homeEvent = $A.get("e.force:navigateToObjectHome");
+        homeEvent.setParams({
+			"scope": component.get("v.sObjectType")
+        });
+		homeEvent.fire();
     },
     /*
      * ページャー機能：次へ
@@ -361,6 +391,8 @@
         component.set("v.end",end);
         component.set("v.nowPage",now+1);
         component.set('v.mapShow', paginationList);
+        helper.setViewCnt(component,rec.length,now+1,pageSize);
+		
     },
     /*
      * ページャー機能：前へ
@@ -397,5 +429,6 @@
         component.set("v.end",end);
         component.set("v.nowPage",now-1);
         component.set('v.mapShow', paginationList);
+        helper.setViewCnt(component,rec.length,now-1,pageSize);
     }
 })

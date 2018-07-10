@@ -111,9 +111,10 @@ public with sharing class CustomListViewController {
      * OUT @ List<sObject>　：リストビューデータ
      */
     @AuraEnabled
-    public static List<sObject> getListViewData(string sObjectType,List<string> clms,string viewId){
+    public static List<sObject> getListViewData(string sObjectType,List<string> clms,string viewId,string sortclm,string sort){
         List<sObject> lstObj = new List<sObject>();
         	//対象オブジェクトの標準コントローラーにアクセス
+        	//List<sObject> sList = database.Query(getquery(sObjectType,clms));
             ApexPages.StandardSetController ssc = new ApexPages.StandardSetController(
                 database.getQueryLocator(getquery(sObjectType,clms))
             );
@@ -121,6 +122,7 @@ public with sharing class CustomListViewController {
 			ssc.setPageSize(200);
             //指定ビューでフィルタリング
             ssc.setFilterID(viewId);
+
             boolean doLoop = true;
             integer cnt=0;
             while(doLoop){
@@ -132,11 +134,59 @@ public with sharing class CustomListViewController {
                 if(!ssc.getHasNext() || cnt >=2000) break;
                 ssc.next();
             }
+        if(!string.isBlank(sortclm1)){
+            lstObj = sortList(lstObj,sortclm1,sort1);
+        }
         return lstObj;
     }
     @AuraEnabled
 	public static void updListViews(List<sObject> lstUpd){
         if(!lstUpd.isEmpty()) update lstUpd;
+    }
+    /*
+     * ソート処理
+     * @Param1 entext 暗号化された値
+     * @return 復号化された値
+     */
+    public static List<Sobject> sortList(List<Sobject> items, String sortField, String order){
+        if(items.isEmpty()) return items;
+        List<Sobject> rslt = new List<Sobject>();
+        List<Sobject> res = new List<Sobject>();
+        
+        /* sort拡張バージョン
+        list<sObjectComparable> lstSoc = new list<sObjectComparable>();
+        boolean isAsc = (order=='asc')? true : false;
+        for(Sobject ob : items){
+            sObjectComparable soc = new sObjectComparable(ob,sortField,isAsc);
+            lstSoc.add(soc);
+        }
+        lstSoc.sort();
+        for(sObjectComparable sb : lstSoc){
+            res.Add(sb.sortList);
+        }
+		*/
+        Map<object, List<Sobject>> objectMap = new Map<object, List<Sobject>>();
+        for(Sobject ob : items){
+            if(objectMap.get(ob.get(sortField)) == null){
+                objectMap.put(ob.get(sortField), new List<Sobject>());
+            }
+            objectMap.get(ob.get(sortField)).add(ob);
+        }
+        List<object> keys = new List<object>(objectMap.keySet());
+        keys.sort();
+        for(object key : keys){
+            rslt.addAll(objectMap.get(key));
+        }
+        if(order.toLowerCase() == 'asc'){
+            for(Sobject ob : rslt){
+				res.add(ob);
+            }
+        }else if(order.toLowerCase() == 'desc'){
+            for(integer i = rslt.size()-1; i >= 0; i--){
+				res.add(rslt[i]);
+            }
+        }
+        return res;
     }
     /*
      * クエリ生成

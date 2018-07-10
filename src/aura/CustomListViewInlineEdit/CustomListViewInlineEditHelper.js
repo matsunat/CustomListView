@@ -26,7 +26,9 @@
         action.setParams({
             "sObjectType" : component.get("v.sObjectType"),
             "clms" : clms,
-            "viewId" : viewid
+            "viewId" : viewid,
+            "sortclm1": component.get("v.SortClm"),
+            "sort1": component.get("v.Sort")
         });
         action.setCallback(this, function(a) {
             if(a.getState() === "SUCCESS"){
@@ -49,6 +51,11 @@
         });
         $A.enqueueAction(action); 
 	},
+    /*
+     * 編集キャンセル
+     *  IN  @ component ：component情報
+     *      @ helper : helper情報
+     */
     cancelEditMode : function(component,helper) {
         var mapShow = component.get("v.mapShow");
         for ( var key in mapShow ) {
@@ -71,35 +78,22 @@
      *      @ sortclm ： ソート対象のカラム名
      * 		@ sort : 降順、昇順(asc,desc)
      */
-    sortData : function(component,helper,sortclm,sort){
+	sortData : function(component,helper,sortclm,sort){
         var datalist = component.get("v.ListData");
-        if(sort==="asc"){
-            datalist.sort(function(a,b){
-               if(a[sortclm]===null || a[sortclm] === undefined) return 1;
-               if(b[sortclm]===null || b[sortclm] === undefined) return -1;
-                if(!isFinite(a[sortclm])&&!isFinite(b[sortclm])){
-                   if(a[sortclm]<b[sortclm]) return -1;
-                   if(a[sortclm]>b[sortclm]) return 1;
-                }else{
-                    return a[sortclm] -b[sortclm];
-                }
-               return 0;
-            });
-        }else{
-             datalist.sort(function(a,b){
-               if(a[sortclm]===null || a[sortclm] === undefined) return 1;
-               if(b[sortclm]===null || b[sortclm] === undefined) return -1;
-               if(!isFinite(a[sortclm])&&!isFinite(b[sortclm])){
-                   if(a[sortclm]>b[sortclm]) return -1;
-                   if(a[sortclm]<b[sortclm]) return 1;
-               }else{
-                  return b[sortclm] -a[sortclm];
-               }
-               return 0;
-            });           
-        }
+		var reverse = sort !== 'asc';
+        datalist.sort(this.sortBy(sortclm, reverse));
+        
         component.set("v.ListData",datalist);
         helper.setMapShow(component,datalist,helper);
+    },
+    sortBy: function (field, reverse, primer) {
+        var key = primer ?
+            function(x) {return primer(x[field])} :
+        function(x) {return x[field]};
+        reverse = !reverse ? 1 : -1;
+        return function (a, b) {
+            return a = key(a), b = key(b), reverse * ((a > b) - (b > a));
+        }
     },
     /*
      * レコードセット
@@ -172,7 +166,8 @@
 		for(var i=0; i< pageSize; i++){
 			helper.setMapShowRecord(component,rec,clms,i,clmInfo,paginationList,helper);
 		}
-		component.set('v.mapShow', paginationList);        
+		component.set('v.mapShow', paginationList); 
+        helper.setViewCnt(component,rec.length,1,pageSize);
     },
 	/*
 	 *  一覧の表示ヘッダカラム
